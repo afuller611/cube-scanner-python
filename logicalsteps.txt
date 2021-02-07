@@ -1,0 +1,25 @@
+Start Webcam
+
+Do things to get good contours (canny, kernel, dilate)
+
+Determine if something is square (circularity of 0.785) between 0.7 and 0.9 is probs good
+    contour, need area and perimeter
+
+Draw square around that square
+
+Once 9 are found, take a snapshot and get HSV or RGB colors of average of each of those squares
+
+Repeat for all sides
+
+(We could also ask for each colored side -- show us orange center, show us red center, etc. so we could use those as a baseline for next part)
+
+We should now have 6 arrays of colors
+
+Some kind of function to go through these arrays and get colors determined
+
+Logical checks
+    Middles should be 6 different colors
+    Each color shouuld have 9 faces
+
+
+Another option is to have squares on the screen and they line the cube up with those squares
