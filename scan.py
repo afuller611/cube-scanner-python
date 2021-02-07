@@ -77,7 +77,7 @@ while(1):
             # Then draw that rectangle on the image frame
             cv2.rectangle(imageFrame, (x,y), (x+w, y+h), (0, 255, 0), 3)
 
-
+    # Might want to add some kind of logic so it checks that there are 8 squares and that they're about the same spot they were in previous frames. Can also check to see if colors stay the same in multiple frames.
     if (len(squares) > 8):
 
         # Sort the 9 squares found by y coordinate
