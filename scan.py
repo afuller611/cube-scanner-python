@@ -6,6 +6,7 @@ from matplotlib import pyplot as plt
 import cv2
 import imutils
 import math
+from types import SimpleNamespace
 
 
 # Capturing video through webcam
@@ -29,6 +30,7 @@ def isContourSquare(c):
         return False
     
 
+
 # Start a while loop 
 while(1): 
       
@@ -38,6 +40,7 @@ while(1):
 
     # Get what contours should be
 
+    # Make a copy of the image frame to change it
     contourImage = imageFrame
 
     # Gray the image cause that helps for some reason
@@ -60,6 +63,7 @@ while(1):
 
 
     colors = []
+    squares = []
     for i in range(len(contours)):
     # Check to see if the contour is square, and that it doesn't have a child, or, if it does have a child, that the child is not square
     # See this article to understand hiearchy https://docs.opencv.org/3.1.0/d9/d8b/tutorial_py_contours_hierarchy.html (for some reason hierarchy is as an array of length 1 - real data is nested in there)
@@ -67,13 +71,37 @@ while(1):
             # If it's square, let's grab the "bounding rectangle" -- returns x, y, width and height
             x,y,w,h = cv2.boundingRect(contours[i])
             color = np.array(cv2.mean(imageFrame[y:y+h,x:x+w])).astype(np.uint8)
-            colors.append(color)
+
+            square = SimpleNamespace(x=x, y=y, color=color)
+            squares.append(square)
             # Then draw that rectangle on the image frame
             cv2.rectangle(imageFrame, (x,y), (x+w, y+h), (0, 255, 0), 3)
 
-    if (len(colors) > 8):
-        f = open("test.txt", "x")
-        f.write(str(colors))
+
+    if (len(squares) > 8):
+
+        # Sort the 9 squares found by y coordinate
+        sortedByYSquares = sorted(squares, key=lambda square: square.y)
+
+        # Separate into 3 rows (this is done before sorting by x because the y coordinate could be a little bit off from others in the row)
+        topRow = sorted([sortedByYSquares[0], sortedByYSquares[1], sortedByYSquares[2]], key=lambda square: square.x)
+        middleRow = sorted([sortedByYSquares[3], sortedByYSquares[4], sortedByYSquares[5]], key=lambda square: square.x)
+        bottomRow = sorted([sortedByYSquares[6], sortedByYSquares[7], sortedByYSquares[8]], key=lambda square: square.x)
+
+        # Combine the rows to make an array of 3 arrays
+        faceNotFlattened = [topRow, middleRow, bottomRow]
+
+        # Flatten that array into an array of 9 squares
+        sortedFace = []
+        for row in faceNotFlattened:
+            for square in row:
+                sortedFace.append(square)
+        
+        # Print that face
+        print(sortedFace)
+
+        # Take a screenshot of when the face was read for testing
+        cv2.imwrite("test.png", imageFrame)
         cv2.destroyAllWindows() 
         break
     # cv2.drawContours(imageFrame, newContours, -1, (0, 255, 0), 3)
