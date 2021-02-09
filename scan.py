@@ -17,14 +17,13 @@ bottom_right = (765, 485)
 
 
 def isContourSquare(c):
-    # approximate the contour
+
     peri = cv2.arcLength(c, True)
-    # the contour is 'bad' if it is not a rectangle
     area = cv2.contourArea(c)
 
     # Find the circularity of the contour, a square's should be about 0.785
     squareness = 4 * math.pi * area / math.pow(peri, 2)
-    if (area > 500 and squareness >= 0.68 and squareness <= 0.9):
+    if (area > 500 and squareness >= 0.7 and squareness <= 0.85):
         return True
     else:
         return False
@@ -36,12 +35,12 @@ while(1):
       
     # webcam in image frames 
     _, imageFrame = webcam.read()
-    scanFrame = imageFrame[upper_left[1] : bottom_right[1], upper_left[0] : bottom_right[0]]
+    # scanFrame = imageFrame[upper_left[1] : bottom_right[1], upper_left[0] : bottom_right[0]]
 
-    # Get what contours should be
+    # Get what contours should be -- haven't used this yet but could: https://stackoverflow.com/questions/52737584/contour-identification-using-opencv
 
     # Make a copy of the image frame to change it
-    contourImage = imageFrame
+    contourImage = imageFrame.copy()
 
     # Gray the image cause that helps for some reason
     gray = cv2.cvtColor(contourImage, cv2.COLOR_BGR2GRAY)
@@ -58,9 +57,9 @@ while(1):
     # Dilating the lines to help detect edges better
     dilated = cv2.dilate(canny, kernel, iterations=2)
 
-    #Finally find the contours
+    # Finally find the contours
     (contours, hierarchy) = cv2.findContours(dilated.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-
+    
 
     colors = []
     squares = []
@@ -70,15 +69,20 @@ while(1):
         if (isContourSquare(contours[i]) and (hierarchy[0][i][2] == -1 or not isContourSquare(contours[hierarchy[0][i][2]]))):
             # If it's square, let's grab the "bounding rectangle" -- returns x, y, width and height
             x,y,w,h = cv2.boundingRect(contours[i])
-            color = np.array(cv2.mean(imageFrame[y:y+h,x:x+w])).astype(np.uint8)
 
-            square = SimpleNamespace(x=x, y=y, color=color)
+            # Grab color -- this isn't good
+            avgColor = np.array(cv2.mean(contourImage[y+2:y+h-2,x+2:x+w-2])).astype(np.uint8)
+
+            # print(imageFrame[y:y+h,x:x+w])
+            square = SimpleNamespace(x=x, y=y, avgColor=avgColor, w=w, h=h)
             squares.append(square)
             # Then draw that rectangle on the image frame
             cv2.rectangle(imageFrame, (x,y), (x+w, y+h), (0, 255, 0), 3)
 
-    # Might want to add some kind of logic so it checks that there are 8 squares and that they're about the same spot they were in previous frames. Can also check to see if colors stay the same in multiple frames.
-    if (len(squares) > 8):
+    # Might want to add some kind of logic so it checks that there are 8 squares
+    # and that they're about the same spot they were in previous frames.
+    #  Can also check to see if colors stay the same in multiple frames.
+    if (len(squares) == 9):
 
         # Sort the 9 squares found by y coordinate
         sortedByYSquares = sorted(squares, key=lambda square: square.y)
@@ -104,7 +108,6 @@ while(1):
         cv2.imwrite("test.png", imageFrame)
         cv2.destroyAllWindows() 
         break
-    # cv2.drawContours(imageFrame, newContours, -1, (0, 255, 0), 3)
 
     # Program Termination 
     cv2.imshow("Cube Scanner", imageFrame) 
