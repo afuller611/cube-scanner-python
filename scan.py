@@ -8,7 +8,6 @@ import imutils
 import math
 from types import SimpleNamespace
 
-
 # Capturing video through webcam
 webcam = cv2.VideoCapture(0)
 
@@ -27,13 +26,12 @@ def isContourSquare(c):
         return True
     else:
         return False
-    
 
 
-# Start a while loop 
-while(1): 
-      
-    # webcam in image frames 
+# Start a while loop
+while(1):
+
+    # webcam in image frames
     _, imageFrame = webcam.read()
     # scanFrame = imageFrame[upper_left[1] : bottom_right[1], upper_left[0] : bottom_right[0]]
 
@@ -58,26 +56,27 @@ while(1):
     dilated = cv2.dilate(canny, kernel, iterations=2)
 
     # Finally find the contours
-    (contours, hierarchy) = cv2.findContours(dilated.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    
+    (contours, hierarchy) = cv2.findContours(
+        dilated.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
     colors = []
     squares = []
     for i in range(len(contours)):
-    # Check to see if the contour is square, and that it doesn't have a child, or, if it does have a child, that the child is not square
-    # See this article to understand hiearchy https://docs.opencv.org/3.1.0/d9/d8b/tutorial_py_contours_hierarchy.html (for some reason hierarchy is as an array of length 1 - real data is nested in there)
+        # Check to see if the contour is square, and that it doesn't have a child, or, if it does have a child, that the child is not square
+        # See this article to understand hiearchy https://docs.opencv.org/3.1.0/d9/d8b/tutorial_py_contours_hierarchy.html (for some reason hierarchy is as an array of length 1 - real data is nested in there)
         if (isContourSquare(contours[i]) and (hierarchy[0][i][2] == -1 or not isContourSquare(contours[hierarchy[0][i][2]]))):
             # If it's square, let's grab the "bounding rectangle" -- returns x, y, width and height
-            x,y,w,h = cv2.boundingRect(contours[i])
+            x, y, w, h = cv2.boundingRect(contours[i])
 
-            # Grab color -- this isn't good
-            avgColor = np.array(cv2.mean(contourImage[y+2:y+h-2,x+2:x+w-2])).astype(np.uint8)
+            # Grab color
+            avgColor = np.array(
+                cv2.mean(contourImage[y+2:y+h-2, x+2:x+w-2])).astype(np.uint8)
 
-            # print(imageFrame[y:y+h,x:x+w])
-            square = SimpleNamespace(x=x, y=y, avgColor=avgColor, w=w, h=h)
+            square = SimpleNamespace(
+                x=x, y=y, avgColor=avgColor, w=w, h=h)
             squares.append(square)
             # Then draw that rectangle on the image frame
-            cv2.rectangle(imageFrame, (x,y), (x+w, y+h), (0, 255, 0), 3)
+            cv2.rectangle(imageFrame, (x, y), (x+w, y+h), (0, 255, 0), 3)
 
     # Might want to add some kind of logic so it checks that there are 8 squares
     # and that they're about the same spot they were in previous frames.
@@ -88,9 +87,12 @@ while(1):
         sortedByYSquares = sorted(squares, key=lambda square: square.y)
 
         # Separate into 3 rows (this is done before sorting by x because the y coordinate could be a little bit off from others in the row)
-        topRow = sorted([sortedByYSquares[0], sortedByYSquares[1], sortedByYSquares[2]], key=lambda square: square.x)
-        middleRow = sorted([sortedByYSquares[3], sortedByYSquares[4], sortedByYSquares[5]], key=lambda square: square.x)
-        bottomRow = sorted([sortedByYSquares[6], sortedByYSquares[7], sortedByYSquares[8]], key=lambda square: square.x)
+        topRow = sorted([sortedByYSquares[0], sortedByYSquares[1],
+                         sortedByYSquares[2]], key=lambda square: square.x)
+        middleRow = sorted([sortedByYSquares[3], sortedByYSquares[4],
+                            sortedByYSquares[5]], key=lambda square: square.x)
+        bottomRow = sorted([sortedByYSquares[6], sortedByYSquares[7],
+                            sortedByYSquares[8]], key=lambda square: square.x)
 
         # Combine the rows to make an array of 3 arrays
         faceNotFlattened = [topRow, middleRow, bottomRow]
@@ -100,18 +102,18 @@ while(1):
         for row in faceNotFlattened:
             for square in row:
                 sortedFace.append(square)
-        
+
         # Print that face
         print(sortedFace)
 
         # Take a screenshot of when the face was read for testing
         cv2.imwrite("test.png", imageFrame)
-        cv2.destroyAllWindows() 
+        cv2.destroyAllWindows()
         break
 
-    # Program Termination 
-    cv2.imshow("Cube Scanner", imageFrame) 
+    # Program Termination
+    cv2.imshow("Cube Scanner", imageFrame)
 
-    if cv2.waitKey(10) & 0xFF == ord('q'): 
-        cv2.destroyAllWindows() 
+    if cv2.waitKey(10) & 0xFF == ord('q'):
+        cv2.destroyAllWindows()
         break
