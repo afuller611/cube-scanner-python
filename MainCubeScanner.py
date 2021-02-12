@@ -11,15 +11,6 @@ import time
 import json
 
 
-class Square:
-    def __init__(self, color, x, y, w, h):
-        self.color = color
-        self.x = x
-        self.y = y
-        self.w = w
-        self.h = h
-
-
 def isContourSquare(c):
 
     peri = cv2.arcLength(c, True)
@@ -112,7 +103,7 @@ def scanSide(imageFrame, faceName):
         # Take a screenshot
         cv2.imwrite(faceName, imageFrame)
 
-        print(sortedFace)
+        # print(sortedFace)
         # Print that face
         return sortedFace
     else:
@@ -127,10 +118,21 @@ bottom_right = (765, 485)
 
 scanNow = True
 scannedSides = []
+scannedSidesWithLabels = {}
 
 # Start a while loop
 # while(1):
 
+sideLabels = {
+    0: "front",
+    1: "left",
+    2: "back",
+    3: "right",
+    4: "up",
+    5: "down"
+}
+
+loops = 0
 
 while(len(scannedSides) < 6):
 
@@ -141,39 +143,38 @@ while(len(scannedSides) < 6):
     # Scan side
     scannedSide = False
 
+    # This is kinda hacky...but not sure how to do a sleep without freezing the frame, supposed this won't matter for hololens though
+    if (loops > 100):
+        scanNow = True
+
     if (scanNow):
         scannedSide = scanSide(imageFrame, str(len(scannedSides)) + ".png")
 
     if (bool(scannedSide)):
-        scannedSides.append(scannedSides)
+        scannedSides.append(scannedSide)
         scanNow = False
+        loops = 0
 
     cv2.imshow("Cube Scanner", imageFrame)
 
-    if (not scanNow):
+    if (not scanNow and loops == 0):
         if (len(scannedSides) == 1 or len(scannedSides) == 2 or len(scannedSides) == 3):
             print("Rotate Cube to the Left")
-            time.sleep(5)
         if (len(scannedSides) == 4):
             print("Rotate Cube Up")
-            time.sleep(5)
         if (len(scannedSides) == 5):
             print("Rotate Cube Up Twice")
-            time.sleep(5)
-        scanNow = True
     if len(scannedSides) > 5:
-        print(scannedSides)
-        jsonFormatObject = {
-            "allSides": []
-        }
-        for side in scannedSides:
-            jsonFormatObject["allSides"].append(side)
+        for i in range(len(scannedSides)):
+            scannedSidesWithLabels[sideLabels[i]] = scannedSides[i]
 
         f = open("cubescandata.txt", "w")
-        json_str = json.dumps(jsonFormatObject)
+        json_str = json.dumps(scannedSidesWithLabels)
         f.write(json_str)
         f.close()
 
+
+    loops += 1
     # Program Termination
     if cv2.waitKey(10) & 0xFF == ord('q'):
         cv2.destroyAllWindows()
