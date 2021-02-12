@@ -7,6 +7,17 @@ import cv2
 import imutils
 import math
 from types import SimpleNamespace
+import time
+import json
+
+
+class Square:
+    def __init__(self, color, x, y, w, h):
+        self.color = color
+        self.x = x
+        self.y = y
+        self.w = w
+        self.h = h
 
 
 def isContourSquare(c):
@@ -59,7 +70,13 @@ def scanSide(imageFrame, faceName):
                 cv2.mean(contourImage[y+2:y+h-2, x+2:x+w-2])).astype(np.uint8)
 
             # Save square as object
-            square = SimpleNamespace(x=x, y=y, avgColor=avgColor, w=w, h=h)
+            square = {
+				"x" : x,
+				"y" : y,
+				"w" : w,
+				"h" : h,
+				"avgColor" : avgColor.tolist()
+			}
 
             # Append square to array of squares
             squares.append(square)
@@ -73,15 +90,15 @@ def scanSide(imageFrame, faceName):
     if (len(squares) == 9):
 
         # Sort the 9 squares found by y coordinate
-        sortedByYSquares = sorted(squares, key=lambda square: square.y)
+        sortedByYSquares = sorted(squares, key=lambda square: square["y"])
 
         # Separate into 3 rows (this is done before sorting by x because the y coordinate could be a little bit off from others in the row)
         topRow = sorted([sortedByYSquares[0], sortedByYSquares[1],
-                         sortedByYSquares[2]], key=lambda square: square.x)
+                         sortedByYSquares[2]], key=lambda square: square["x"])
         middleRow = sorted([sortedByYSquares[3], sortedByYSquares[4],
-                            sortedByYSquares[5]], key=lambda square: square.x)
+                            sortedByYSquares[5]], key=lambda square: square["x"])
         bottomRow = sorted([sortedByYSquares[6], sortedByYSquares[7],
-                            sortedByYSquares[8]], key=lambda square: square.x)
+                            sortedByYSquares[8]], key=lambda square: square["x"])
 
         # Combine the rows to make an array of 3 arrays
         faceNotFlattened = [topRow, middleRow, bottomRow]
@@ -98,8 +115,8 @@ def scanSide(imageFrame, faceName):
         print(sortedFace)
         # Print that face
         return sortedFace
-
-
+    else:
+        return False
 
 
 # Capturing video through webcam
@@ -108,25 +125,56 @@ webcam = cv2.VideoCapture(0)
 upper_left = (0, 245)
 bottom_right = (765, 485)
 
+scanNow = True
+scannedSides = []
 
 # Start a while loop
-while(1):
+# while(1):
+
+
+while(len(scannedSides) < 6):
 
     # webcam in image frames
     _, imageFrame = webcam.read()
-    # scanFrame = imageFrame[upper_left[1] : bottom_right[1], upper_left[0] : bottom_right[0]]
-    scannedSide = scanSide(imageFrame, "yo.png")
-    print(scannedSide)
 
-    # Program Termination
+    # While scanned sides is less than 7
+    # Scan side
+    scannedSide = False
+
+    if (scanNow):
+        scannedSide = scanSide(imageFrame, str(len(scannedSides)) + ".png")
+
+    if (bool(scannedSide)):
+        scannedSides.append(scannedSides)
+        scanNow = False
+
     cv2.imshow("Cube Scanner", imageFrame)
 
+    if (not scanNow):
+        if (len(scannedSides) == 1 or len(scannedSides) == 2 or len(scannedSides) == 3):
+            print("Rotate Cube to the Left")
+            time.sleep(5)
+        if (len(scannedSides) == 4):
+            print("Rotate Cube Up")
+            time.sleep(5)
+        if (len(scannedSides) == 5):
+            print("Rotate Cube Up Twice")
+            time.sleep(5)
+        scanNow = True
+    if len(scannedSides) > 5:
+        print(scannedSides)
+        jsonFormatObject = {
+            "allSides": []
+        }
+        for side in scannedSides:
+            jsonFormatObject["allSides"].append(side)
+
+        f = open("cubescandata.txt", "w")
+        json_str = json.dumps(jsonFormatObject)
+        f.write(json_str)
+        f.close()
+
+    # Program Termination
     if cv2.waitKey(10) & 0xFF == ord('q'):
         cv2.destroyAllWindows()
         break
-
-
-
-
-
-
