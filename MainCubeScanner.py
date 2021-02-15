@@ -4,11 +4,10 @@
 import numpy as np
 from matplotlib import pyplot as plt
 import cv2
-import imutils
 import math
-from types import SimpleNamespace
-import time
 import json
+from sklearn.cluster import KMeans
+from k_means_constrained import KMeansConstrained
 
 
 def isContourSquare(c):
@@ -18,7 +17,7 @@ def isContourSquare(c):
 
     # Find the circularity of the contour, a square's should be about 0.785
     squareness = 4 * math.pi * area / math.pow(peri, 2)
-    if (area > 500 and squareness >= 0.7 and squareness <= 0.85):
+    if (area > 500 and squareness >= 0.70 and squareness <= 0.85):
         return True
     else:
         return False
@@ -62,12 +61,12 @@ def scanSide(imageFrame, faceName):
 
             # Save square as object
             square = {
-				"x" : x,
-				"y" : y,
-				"w" : w,
-				"h" : h,
-				"avgColor" : avgColor.tolist()
-			}
+                "x": x,
+                "y": y,
+                "w": w,
+                "h": h,
+                "avgColor": avgColor.tolist()
+            }
 
             # Append square to array of squares
             squares.append(square)
@@ -168,11 +167,53 @@ while(len(scannedSides) < 6):
         for i in range(len(scannedSides)):
             scannedSidesWithLabels[sideLabels[i]] = scannedSides[i]
 
+        # Map over scanned sides and get an array of all BGR values for each square
+        allCubes = []
+        for face in scannedSides:
+            for square in face:
+                allCubes.append(
+                    [square["avgColor"][0], square["avgColor"][1], square["avgColor"][2]])
+
+        # Calculate Kmeans and cluster colors with min/max size of 9
+        kmeans = KMeansConstrained(n_clusters=6, size_min=9, size_max=9)
+        k = kmeans.fit
+        labels = kmeans.fit_predict(allCubes)
+
+        # Object to hold all colors
+        cube = {
+            "front": [],
+            "left": [],
+            "back": [],
+            "right": [],
+            "up": [],
+            "down": []
+        }
+
+        # Loop over the cluster data and get cube map based on cluster
+        for i in range(len(labels)):
+            if (i >= 0 and i <= 8):
+                cube["front"].append(int(labels[i]))
+            elif (i >= 9 and i <= 17):
+                cube["left"].append(int(labels[i]))
+            elif (i >= 18 and i <= 26):
+                cube["back"].append(int(labels[i]))
+            elif (i >= 27 and i <= 35):
+                cube["right"].append(int(labels[i]))
+            elif (i >= 36 and i <= 44):
+                cube["up"].append(int(labels[i]))
+            else:
+                cube["down"].append(int(labels[i]))
+
+
+        f = open("cubemap.txt", "w")
+        json_str = json.dumps(cube)
+        f.write(json_str)
+        f.close()
+
         f = open("cubescandata.txt", "w")
         json_str = json.dumps(scannedSidesWithLabels)
         f.write(json_str)
         f.close()
-
 
     loops += 1
     # Program Termination
