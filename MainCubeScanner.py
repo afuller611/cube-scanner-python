@@ -174,6 +174,7 @@ while(len(scannedSides) < 6):
                 allCubes.append(
                     [square["avgColor"][0], square["avgColor"][1], square["avgColor"][2]])
 
+        # https://joshlk.github.io/k-means-constrained/
         # Calculate Kmeans and cluster colors with min/max size of 9
         kmeans = KMeansConstrained(n_clusters=6, size_min=9, size_max=9)
         k = kmeans.fit
